@@ -28,15 +28,15 @@ object Schemas {
 
   val mortgageApplicants = StructType(Seq(
     StructField("ID", IntegerType, nullable = false),
-    StructField("NAME", IntegerType, nullable = false),
-    StructField("STREET_ADDRESS", IntegerType, nullable = false),
-    StructField("CITY", IntegerType, nullable = false),
-    StructField("STATE", IntegerType, nullable = false),
-    StructField("STATE_CODE", IntegerType, nullable = false),
-    StructField("EMAIL_ADDRESS", IntegerType, nullable = false),
-    StructField("PHONE_NUMBER", IntegerType, nullable = false),
-    StructField("GENDER", IntegerType, nullable = false),
-    StructField("SOCIAL_SECURITY_NUMBER", IntegerType, nullable = false),
-    StructField("EMPLOYMENT_STATUS", IntegerType, nullable = false)
+    StructField("NAME", StringType, nullable = false),
+    StructField("STREET_ADDRESS", StringType, nullable = false),
+    StructField("CITY", StringType, nullable = false),
+    StructField("STATE", StringType, nullable = false),
+    StructField("STATE_CODE", StringType, nullable = false),
+    StructField("EMAIL_ADDRESS", StringType, nullable = false),
+    StructField("PHONE_NUMBER", StringType, nullable = false),
+    StructField("GENDER", StringType, nullable = false),
+    StructField("SOCIAL_SECURITY_NUMBER", StringType, nullable = false),
+    StructField("EMPLOYMENT_STATUS", StringType, nullable = false)
   ))
 }
