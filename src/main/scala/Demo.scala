@@ -1,8 +1,9 @@
-import Demo.{interestRatesDf, mortgageApplicantsDf, mortgageDf}
+// import Demo.{interestRatesDf, mortgageApplicantsDf, mortgageDf}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{col, lit, split, when}
 import Schemas._
 import DataFrameUtils._
+import Bank._
 
 object Demo extends App {
   val spark = SparkSession.builder()
@@ -16,31 +17,49 @@ object Demo extends App {
   val mortgageApplicantsPath = "data/MORTGAGE_APPLICANTS.csv"
   val interestRatesPath = "data/INTEREST_RATES.csv"
   val creditScorePath = "data/CREDIT_SCORE.csv"
-  /*
-  * Lectura de archivos .csv
-  * */
+
+  val mortgageTable = "mortgage"
+  val mortgageApplicantsTable = "mortgage_applicants"
+  val interestRatesTable = "interest_rates"
+  val creditScoreTable = "credit_score"
+
+  // paso 1 compribacion de existencia de tablas.
+  if(!spark.catalog.tableExists(mortgageApplicantsTable)){
+    Bank.generarTablaApplicants(spark, mortgageApplicantsPath, mortgageApplicantsTable, "overwrite")
+  }else if(!spark.catalog.tableExists(interestRatesTable)){
+    Bank.generarTablaInterestRates(spark, interestRatesPath, interestRatesTable, "overwrite")
+  }
+
+  // spark.table(mortgageApplicantsTable).show(false)
+
+  // paso 2 lectura de archivos mortgage.csv y credit_score.csv.
   val mortgageDf = spark.read.option("header", "true").schema(mortgageSchema).csv(mortgagePath)
-  val mortgageApplicantsDf = spark.read.option("header", "true").schema(mortgageApplicants).csv(mortgageApplicantsPath)
-  val interestRatesDf = spark.read.option("header", "true").schema(interetRatesSchema).csv(interestRatesPath)
   val creditScoreDf = spark.read.option("header", "true").schema(creditScoreSchema).csv(creditScorePath)
 
-  /*
-  * Carga de bronces
-  * */
-  mortgageDf.write.format("delta").save("data/bronze/mortgage")
-  mortgageApplicantsDf.write.format("delta").save("data/bronze/mortgage_applicants")
-  interestRatesDf.write.format("delta").save("data/bronze/interest_rates")
-  creditScoreDf.write.format("delta").save("data/bronze/credit_score")
+  // paso 3 carga de dataframes crudos a tablas delta.
+  mortgageDf.write.format("delta").mode("overwrite").save("data/bronze/mortgage")
+  creditScoreDf.write.format("delta").mode("overwrite").save("data/bronze/credit_score")
 
-  /*
-  * Limpieza de dataframes
-  * */
-
+  // paso 4 limpieza de dataframes
   val mortgageDfSilver = cleanMortgageDf(mortgageDf)
-  val mortgageApplicantsDfCleaned = cleanMortgageApplicantsDf(mortgageApplicantsDf)
-  val mortgageApplicantsDfSilver = mortgageApplicantsDfCleaned.join(creditScoreDf, Seq("ID"), "inner")
-  // val interestRatesDfSilver = spark.read.format("delta").load("data/bronze/interest_rates")
 
-  mortgageApplicantsDfSilver.show()
+  // paso 5 carga de dataframe limpio a tabla plata
+  mortgageDfSilver.write.format("delta").mode("overwrite").save("data/silver/mortgage")
 
+  // paso 6 generacion de dataframe oro
+
+  val mortgageGold = mortgageDfSilver.join(spark.table(mortgageApplicantsTable), Seq("ID"), "inner")
+    .join(creditScoreDf, Seq("ID"), "inner")
+
+  // paso 7 carga de dataframe oro a tabla delta.
+  mortgageDfSilver.write.format("delta").mode("overwrite").save("data/gold/mortgage")
+
+  /*
+  mortgageDfSilver.write.format("delta").save("data/silver/mortgage")
+  val mortgageApplicantsDfGold = spark.read.format("delta").load("data/silver/mortgage_applicants")
+    .join(spark.read.format("delta").load("data/silver/mortgage"), Seq("ID"), "inner")
+    .join(creditScoreDf, Seq("ID"), "inner")
+
+  mortgageApplicantsDfGold.show()
+   */
 }

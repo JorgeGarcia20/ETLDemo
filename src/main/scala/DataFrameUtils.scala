@@ -1,7 +1,20 @@
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{SparkSession, DataFrame}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.functions.{col, lit, split, when}
 
 object DataFrameUtils {
+
+  def readCsvFile(spark: SparkSession, path: String, schema: StructType): DataFrame = {
+    spark.read.option("header", "true").schema(schema).csv(path)
+  }
+
+  def saveDataFrameAsParquet(df: DataFrame, tablePath: String, mode: String): Unit = {
+    df.write.format("delta").mode(mode).save(tablePath)
+  }
+
+  def saveDataFrameAsTable(df: DataFrame, tableName: String, mode: String): Unit = {
+    df.write.format("delta").mode(mode).saveAsTable(tableName)
+  }
 
   /*
   * Esta funcion permitira generar plata
